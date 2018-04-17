@@ -53,26 +53,33 @@ void Member::PathToMemberIDDFS(uint64_t dst_member_id) {
   this->color = COLOR_GRAY;
   double depth = 0;
   memStack.push(this);
-  while(memStack.size()>0){
-    depth++;
-    Member * currMem = memStack.top();
-    memStack.pop();
-    for(std::unordered_map<uint64_t, MemberConnection>::iterator it = currMem->connecting_members.begin(); it != currMem->connecting_members.end(); ++it){
-      MemberConnection MC = it->second;
-      Member * otherMem = MC.dst;
-      if(otherMem->color == COLOR_WHITE){
-        otherMem->color = COLOR_GRAY;
-        otherMem->parent = currMem; 
-        otherMem->key = depth;
-        if(otherMem->member_id == dst_member_id){
-          break;
+  double maxDepth = 0;
+  int found = 0;
+  while(found == 0){
+    maxDepth++;
+    while(memStack.size()>0 && depth <= maxDepth){
+      depth++;
+      Member * currMem = memStack.top();
+      memStack.pop();
+      for(std::unordered_map<uint64_t, MemberConnection>::iterator it = currMem->connecting_members.begin(); it != currMem->connecting_members.end(); ++it){
+        MemberConnection MC = it->second;
+        Member * otherMem = MC.dst;
+        if(otherMem->color == COLOR_WHITE){
+          otherMem->color = COLOR_GRAY;
+          otherMem->parent = currMem; 
+          otherMem->key = depth;
+          if(otherMem->member_id == dst_member_id){
+            found = 1;
+            break;
+          }
+          memStack.push(otherMem);
         }
-        memStack.push(otherMem);
       }
     }
   }
+
 }
-  
+
 void Member::PrintPath(Member* dst) {
   Member *curr = dst;
   while(curr && curr != this) {

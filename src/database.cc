@@ -226,7 +226,7 @@ void Database::BuildMemberGraph() {
 
 double Database::BestGroupsToJoin(Member *root) {
   // Fill in your code here
-  double totalWeight = 1.0;
+  double totalWeight = 0.0;
   // Search all nodes, initializing them
   std::vector<Member *> memList;
   std::queue<Member *> memQueue;
@@ -282,6 +282,7 @@ double Database::BestGroupsToJoin(Member *root) {
     totalWeight += minKey;
     currMem = addedMember;
     numNodes--;
+    std::cout<<"Num Nodes Remaining: "<<numNodes<<std::endl;
   }
 
   return totalWeight;
