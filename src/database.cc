@@ -196,10 +196,95 @@ void Database::LoadData(const std::string &data_folder_path,
 
 void Database::BuildMemberGraph() {
   // Fill in your code here
+  for(std::vector<Member *>::iterator it = members.begin(); it != members.end(); ++it){
+    Member * currMem = *it;
+    for(std::vector<Group *>::iterator it2 = currMem->groups.begin(); it2 != currMem->groups.end(); ++it2){
+      Group * currGroup = *it2;
+      for(std::vector<Member *>::iterator it3 = currGroup->members.begin(); it3 != currGroup->members.end(); ++it3){
+        Member * otherMem = *it3;
+        if(currMem == otherMem){
+          continue;
+        }
+        if(currMem->connecting_members.find(otherMem->member_id) == currMem->connecting_members.end()){
+          MemberConnection currToOther;
+          currToOther.group = currGroup;
+          currToOther.dst = otherMem;
+          currMem->connecting_members[otherMem->member_id] = currToOther;
+        }
+        if(otherMem->connecting_members.find(currMem->member_id) == otherMem->connecting_members.end()){
+          MemberConnection otherToCurr;
+          otherToCurr.group = currGroup;
+          otherToCurr.dst = currMem;
+          otherMem->connecting_members[currMem->member_id] = otherToCurr;
+        }
+      }
+
+    }
+  }
+  
 }
 
 double Database::BestGroupsToJoin(Member *root) {
   // Fill in your code here
+  double totalWeight = 1.0;
+  // Search all nodes, initializing them
+  std::vector<Member *> memList;
+  std::queue<Member *> memQueue;
+  memQueue.push(root);
+  int numNodes = 1;
+  while(memQueue.size() >0){
+    Member * currMem = memQueue.front();
+    memQueue.pop();
+    for(std::unordered_map<uint64_t, MemberConnection>::iterator it = currMem->connecting_members.begin(); it != currMem->connecting_members.end(); ++it){
+      MemberConnection MC = it->second;
+      Member* otherMem = MC.dst;
+      if(otherMem->color == COLOR_WHITE){
+        otherMem->key = -1;
+        otherMem->color = COLOR_GRAY;
+        memQueue.push(otherMem);
+        numNodes++;
+      }
+    }
+  }
+  // Initialize root
+  root->key = 0;
+  root->color = COLOR_BLACK;
+  Member * currMem = root;
+  while(numNodes>0){
+    for(std::unordered_map<uint64_t, MemberConnection>::iterator it = currMem->connecting_members.begin(); it != currMem->connecting_members.end(); ++it){
+      MemberConnection MC = it->second;
+      Member * otherMem = MC.dst;
+      if(otherMem->color == COLOR_GRAY){
+        memList.push_back(otherMem);
+
+      }
+    }
+    double minKey = -1;
+    MemberConnection minMC;
+    Member * minParent;
+    for(std::vector<Member *>::iterator it = memList.begin(); it != memList.end(); ++it){
+      currMem = *it;
+      for(std::unordered_map<uint64_t, MemberConnection>::iterator it2 = currMem->connecting_members.begin(); it2 != currMem->connecting_members.end(); ++it2){
+        MemberConnection MC = it2->second;
+        if(MC.dst->color==COLOR_GRAY){
+          if(MC.GetWeight() < minKey || minKey < 0){
+            minMC = MC;
+            minKey = MC.GetWeight();
+            minParent = currMem;
+          }
+        }
+      }
+    }
+
+    Member * addedMember = minMC.dst;
+    addedMember->parent = minParent;
+    addedMember->color = COLOR_BLACK;
+    totalWeight += minKey;
+    currMem = addedMember;
+    numNodes--;
+  }
+
+  return totalWeight;
 }
 
 }
