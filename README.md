@@ -39,3 +39,13 @@ Pathfinder space usage: 12 kb
 ##### Comments:
 The IDDFS was faster and used less memory than BFS. IDDFS combines the speed in
 finding close neighbors of the BFS with the space efficiency of DFS.
+
+### P4
+For this section, I implemented the prim's algorithm to generate a minimum
+spanning tree.
+
+#### Results:
+```
+Scott Heiferman <- Pat Finegan <- Emily <- Sal Sharief <- Matt Meeker
+Time to generate MST 35.5872
+```

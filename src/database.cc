@@ -6,6 +6,7 @@
 #include <limits>
 #include <queue>
 #include <map>
+#include <list>
 
 #include "member.h"
 #include "csv_reader.h"
@@ -228,10 +229,10 @@ double Database::BestGroupsToJoin(Member *root) {
   // Fill in your code here
   double totalWeight = 0.0;
   // Search all nodes, initializing them
-  std::vector<Member *> memList;
+  std::list<std::pair<uint64_t, MemberConnection>> memList;
   std::queue<Member *> memQueue;
   memQueue.push(root);
-  int numNodes = 1;
+  int numNodes = 0;
   while(memQueue.size() >0){
     Member * currMem = memQueue.front();
     memQueue.pop();
@@ -246,43 +247,48 @@ double Database::BestGroupsToJoin(Member *root) {
       }
     }
   }
+  std::cout<<"Total members: "<<numNodes<<std::endl;
   // Initialize root
   root->key = 0;
   root->color = COLOR_BLACK;
+  root->parent = NULL;
   Member * currMem = root;
-  while(numNodes>0){
+  while(numNodes>1){
     for(std::unordered_map<uint64_t, MemberConnection>::iterator it = currMem->connecting_members.begin(); it != currMem->connecting_members.end(); ++it){
       MemberConnection MC = it->second;
       Member * otherMem = MC.dst;
+      double weight = MC.GetWeight();
       if(otherMem->color == COLOR_GRAY){
-        memList.push_back(otherMem);
-
-      }
-    }
-    double minKey = -1;
-    MemberConnection minMC;
-    Member * minParent;
-    for(std::vector<Member *>::iterator it = memList.begin(); it != memList.end(); ++it){
-      currMem = *it;
-      for(std::unordered_map<uint64_t, MemberConnection>::iterator it2 = currMem->connecting_members.begin(); it2 != currMem->connecting_members.end(); ++it2){
-        MemberConnection MC = it2->second;
-        if(MC.dst->color==COLOR_GRAY){
-          if(MC.GetWeight() < minKey || minKey < 0){
-            minMC = MC;
-            minKey = MC.GetWeight();
-            minParent = currMem;
+        std::list<std::pair<uint64_t, MemberConnection>>::iterator it2 = memList.begin();
+        while(it2 != memList.end()){
+          if(it2->second.dst->color == COLOR_BLACK){
+            it2 = memList.erase(it2);
+            continue;
           }
+          if(it2->second.GetWeight() > weight){
+            break;
+          }
+          ++it2;
         }
+        std::pair<uint64_t, MemberConnection> p = std::make_pair(currMem->member_id,it->second);
+        memList.insert(it2,p);
       }
     }
-
-    Member * addedMember = minMC.dst;
-    addedMember->parent = minParent;
-    addedMember->color = COLOR_BLACK;
-    totalWeight += minKey;
-    currMem = addedMember;
-    numNodes--;
-    std::cout<<"Num Nodes Remaining: "<<numNodes<<std::endl;
+    while(memList.front().second.dst->color != COLOR_GRAY){
+      memList.pop_front();
+    }
+    if(memList.front().second.dst->color == COLOR_GRAY){
+      std::pair<uint64_t, MemberConnection> bestPair = memList.front();
+      memList.pop_front();
+      Member * newMem = bestPair.second.dst;
+      newMem->parent = member_id_hash_index[bestPair.first];
+      numNodes--;
+      MemberConnection MC = bestPair.second;
+      newMem->color = COLOR_BLACK;
+      newMem->key = MC.GetWeight();
+      currMem = newMem;
+      totalWeight += MC.GetWeight();
+    }
   }
 
   return totalWeight;
